@@ -1,0 +1,10 @@
+services:
+  bronze-ingestion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ieee-cis-bronze-ingestion
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: python ingestion/load_ieee_cis.py

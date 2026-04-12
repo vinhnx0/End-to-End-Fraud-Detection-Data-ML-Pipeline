@@ -1,0 +1,3 @@
+data:
+  raw_root: data/raw
+  bronze_root: data/bronze
