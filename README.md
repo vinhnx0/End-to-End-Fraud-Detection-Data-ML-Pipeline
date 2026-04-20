@@ -38,11 +38,11 @@ Raw CSV
 ```
 configs/        → paths, configs
 data/
-raw/          → original CSV
-bronze/       → raw → parquet
-silver/       → joined datasets
-gold/         → feature datasets
-artifacts/    → metadata, model output
+  raw/          → original CSV
+  bronze/       → raw → parquet
+  silver/       → joined datasets
+  gold/         → feature datasets
+  artifacts/    → metadata, model output
 
 ingestion/      → load raw data
 pipeline/       → bronze → silver
