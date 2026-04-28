@@ -32,11 +32,11 @@ NUMERIC_TYPES = (
 
 
 def get_project_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[2]
 
 
 PROJECT_ROOT = get_project_root()
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "paths.yaml"
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "config.yaml"
 
 
 def setup_logging() -> None:
@@ -64,6 +64,8 @@ def build_spark(app_name: str = "feature_builder_ieee_cis") -> SparkSession:
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.driver.host", "127.0.0.1")
         .config("spark.driver.bindAddress", "0.0.0.0")
+        .config("spark.driver.memory", "2g")
+        .config("spark.executor.memory", "2g")
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
@@ -127,9 +129,9 @@ def main() -> None:
     setup_logging()
 
     config = load_config()
-    silver_root = PROJECT_ROOT / "data" / "silver"
-    gold_root = PROJECT_ROOT / "data" / "gold"
-    artifacts_root = PROJECT_ROOT / "data" / "artifacts"
+    silver_root = PROJECT_ROOT / config["data"]["silver_root"]
+    gold_root = PROJECT_ROOT / config["data"]["gold_root"]
+    artifacts_root = PROJECT_ROOT / config["data"]["artifacts_root"]
 
     gold_root.mkdir(parents=True, exist_ok=True)
     artifacts_root.mkdir(parents=True, exist_ok=True)
