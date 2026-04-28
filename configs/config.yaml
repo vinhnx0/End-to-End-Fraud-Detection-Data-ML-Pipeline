@@ -1,0 +1,12 @@
+# configs/config.yaml
+
+data:
+  raw_root: data/raw
+  bronze_root: data/bronze
+  silver_root: data/silver
+  gold_root: data/gold
+  artifacts_root: data/artifacts
+
+scoring:
+  model_output_dir: scoring/model
+  predictions_output_dir: scoring/predictions.parquet
