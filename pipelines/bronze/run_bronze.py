@@ -2,39 +2,34 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 import yaml
 from pyspark.sql import DataFrame, SparkSession
 
-
+# Get the project root path
 def get_project_root() -> Path:
-    return Path(__file__).resolve().parents[1]
-
+    return Path(__file__).resolve().parents[2]
 
 PROJECT_ROOT = get_project_root()
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "paths.yaml"
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "config.yaml"
 
-
+# Set up logging for tracking process
 def setup_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 
-
+# Load the configuration from the config.yaml file
 def load_config() -> dict:
     config_path = Path(os.getenv("PIPELINE_CONFIG", DEFAULT_CONFIG_PATH))
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
-
     with config_path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
-
-def build_spark(app_name: str = "ieee_cis_bronze_ingestion") -> SparkSession:
+# Build Spark session for processing
+def build_spark(app_name: str = "bronze_ingestion") -> SparkSession:
     spark = (
         SparkSession.builder
         .appName(app_name)
@@ -48,11 +43,11 @@ def build_spark(app_name: str = "ieee_cis_bronze_ingestion") -> SparkSession:
     spark.sparkContext.setLogLevel("WARN")
     return spark
 
-
+# Ensure the given directory exists
 def ensure_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
-
+# Read CSV file into Spark DataFrame
 def read_csv(spark: SparkSession, csv_path: Path) -> DataFrame:
     return (
         spark.read
@@ -61,15 +56,11 @@ def read_csv(spark: SparkSession, csv_path: Path) -> DataFrame:
         .csv(str(csv_path))
     )
 
-
+# Write the DataFrame to Parquet format
 def write_parquet(df: DataFrame, output_path: Path) -> None:
-    (
-        df.write
-        .mode("overwrite")
-        .parquet(str(output_path))
-    )
+    df.write.mode("overwrite").parquet(str(output_path))
 
-
+# Process a file: Read CSV, log, and convert to Parquet
 def process_file(spark: SparkSession, source_path: Path, bronze_path: Path) -> None:
     if not source_path.exists():
         raise FileNotFoundError(f"Missing input file: {source_path}")
@@ -81,30 +72,19 @@ def process_file(spark: SparkSession, source_path: Path, bronze_path: Path) -> N
     row_count = df.count()
     col_count = len(df.columns)
 
-    logging.info(
-        "Loaded %s | rows=%s | cols=%s",
-        source_path.name,
-        row_count,
-        col_count,
-    )
-
+    logging.info("Loaded %s | rows=%s | cols=%s", source_path.name, row_count, col_count)
     write_parquet(df, bronze_path)
 
     elapsed = time.time() - start
-    logging.info(
-        "Written bronze parquet: %s | elapsed=%.2fs",
-        bronze_path,
-        elapsed,
-    )
+    logging.info("Written bronze parquet: %s | elapsed=%.2fs", bronze_path, elapsed)
 
-
+# Main function to execute the ingestion process
 def main() -> None:
     setup_logging()
 
     config = load_config()
     raw_root = PROJECT_ROOT / config["data"]["raw_root"]
     bronze_root = PROJECT_ROOT / config["data"]["bronze_root"]
-
     ensure_directory(bronze_root)
 
     file_map = {
@@ -112,7 +92,6 @@ def main() -> None:
         "train_identity.csv": bronze_root / "train_identity",
         "test_transaction.csv": bronze_root / "test_transaction",
         "test_identity.csv": bronze_root / "test_identity",
-        "sample_submission.csv": bronze_root / "sample_submission",
     }
 
     spark = build_spark()
@@ -125,7 +104,6 @@ def main() -> None:
         logging.info("Bronze ingestion completed successfully.")
     finally:
         spark.stop()
-
 
 if __name__ == "__main__":
     try:
