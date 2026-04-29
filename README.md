@@ -1,13 +1,15 @@
-# 🚀 End-to-End Fraud Detection Data + ML Pipeline (Dockerized)
+# 🚀 End-to-End Fraud Detection Data + ML Pipeline (Dockerized v1)
 
 ## 📌 Overview
-This project builds a **production-like fraud detection pipeline** using a modern data engineering + ML workflow.
 
-The system is designed with:
-- **Docker (1 image, multiple containers)**
-- **Medallion Architecture (Bronze → Silver → Gold)**
-- **PySpark for scalable data processing**
-- **Modular pipeline (ingestion → transform → feature → train)**
+This project builds a **production-like batch fraud data platform** using a Data Engineering–first approach.
+
+The system implements a **full pipeline from raw data → final fraud predictions**, designed with:
+
+* Medallion Architecture (Bronze → Silver → Gold → Scoring → Final)
+* PySpark for scalable batch processing
+* Docker as the official runtime
+* Strict phase separation and data contracts
 
 
 ## 🏗️ Architecture
@@ -15,117 +17,150 @@ The system is designed with:
 ```
 Raw CSV
     ↓
-[Bronze] ingestion
+[Bronze] ingestion (CSV → Parquet)
     ↓
 [Silver] join + clean
     ↓
-[Gold] feature dataset
+[Gold] feature table (ML-ready)
     ↓
-[Model] training
+[Scoring] model + predictions
+    ↓
+[Final] business-ready dataset
 ```
 
 
+## 🎯 What This Project Demonstrates
+
+* Production-style **data pipeline design**
+* Clean **phase ownership & separation**
+* End-to-end **batch ML workflow**
+* **Idempotent pipeline execution**
+* Real-world dataset handling (IEEE-CIS)
+
+
 ## 🧱 Tech Stack
-- Python 3.10
-- PySpark
-- Docker
-- Parquet (data storage)
-- YAML config
+
+* Python 3.10
+* PySpark 3.5.1 
+* Docker
+* Parquet (data storage)
+* YAML (config-driven pipeline)
 
 
 ## 📂 Project Structure
 
 ```
-configs/        → paths, configs
+configs/
+  config.yaml
+
 data/
-  raw/          → original CSV
+  raw/          → input CSV
   bronze/       → raw → parquet
-  silver/       → joined datasets
+  silver/       → joined + cleaned
   gold/         → feature datasets
-  artifacts/    → metadata, model output
+  artifacts/    → model + predictions
+  final/        → final output dataset
 
-ingestion/      → load raw data
-pipeline/       → bronze → silver
-features/       → feature engineering
-models/         → training
+pipelines/
+  bronze/run_bronze.py
+  silver/run_silver.py
+  gold/run_gold.py
+  scoring/run_scoring.py
+  final/run_final.py
 
-Dockerfile
-docker-compose.yml
+run_pipeline.py
+
 requirements.txt
+Dockerfile
 ```
 
 
-## ⚙️ Pipeline Execution (Docker)
+## ⚙️ How to Run
 
-### 1. Build image
+### 1. Build Docker image
+
 ```bash
 docker build -t fraud-pipeline:latest .
 ```
 
-### 2. Bronze — Ingestion
 
-```bash
-docker run --rm --name fraud-ingestion \
-  -v ${PWD}:/app -w /app \
-  fraud-pipeline python ingestion/load_ieee_cis.py
+### 2. Run full pipeline (recommended)
+
+```powershell
+docker run --rm --name fraud-pipeline-full `
+  -v ${PWD}:/app -w /app `
+  fraud-pipeline:latest python run_pipeline.py
 ```
 
-### 3. Silver — Transform
+### 3. Run individual phases (optional)
 
-```bash
-docker run --rm --name fraud-transform \
-  -v ${PWD}:/app -w /app \
-  fraud-pipeline python pipeline/bronze_to_silver.py
+Example:
+
+```powershell
+docker run --rm -v ${PWD}:/app -w /app `
+  fraud-pipeline:latest python pipelines/bronze/run_bronze.py
 ```
 
-### 4. Gold — Feature
+## 📊 Output
 
-```bash
-docker run --rm --name fraud-feature \
-  -v ${PWD}:/app -w /app \
-  fraud-pipeline python features/feature_builder.py
+Final dataset:
+
+```
+data/final/scored_transactions/
 ```
 
-### 5. Model Training
+Schema:
 
-```bash
-docker run --rm --name fraud-train \
-  -v ${PWD}:/app -w /app \
-  fraud-pipeline python models/train.py
+```text
+TransactionID
+fraud_probability
 ```
 
+This is the **official data product** of the pipeline.
 
 
-## 📊 Current Progress
+## ✅ Current Status (v1)
 
-✅ Dockerized pipeline (single image, multi-container)
-
-✅ Basic Bronze ingestion (CSV → Parquet)
-
-✅ Basic Silver transformation (join transaction + identity)
-
-✅ Basic Feature engineering (baseline numeric features)
-
-⏳ Model training (Logistic Regression baseline)
+* ✅ Bronze ingestion (CSV → Parquet)
+* ✅ Silver join + cleaning
+* ✅ Gold feature engineering (ML-ready table)
+* ✅ Scoring (Logistic Regression baseline)
+* ✅ Final output dataset (clean contract)
+* ✅ End-to-end pipeline execution (one command)
 
 
-## 🎯 Next Steps
+## ⚠️ Notes
 
-* Improve EDA, Feature Engineering
-* Train advanced models (LightGBM / XGBoost)
-* Add model evaluation metrics (AUC-PR, Recall)
-* Build API serving (FastAPI)
-* Add monitoring & orchestration
+* Spark memory warnings are expected in Docker and do not affect correctness
+* Pipeline is strictly batch (no streaming)
+* Each phase is independent and idempotent
 
 
-## 💡 Key Learnings
+## ❌ Not Included in v1
 
-* Spark requires proper memory tuning inside Docker
-* Separation of pipeline steps improves debugging
-* One-image multi-container design = production-like workflow
-* Medallion architecture simplifies data lifecycle
+* Real-time processing (Kafka, streaming)
+* Advanced ML models (XGBoost, LightGBM)
+* Model evaluation / monitoring
+* Orchestration tools (Airflow)
+* Cloud deployment
+
+
+## 🔜 Next Steps (Post v1)
+
+* Add **model evaluation layer (AUC, Recall, PR-AUC)**
+* Improve feature engineering
+* Introduce better models
+* Add API serving layer (FastAPI)
+* Add orchestration (Airflow)
 
 
 ## 📎 Dataset
 
 IEEE-CIS Fraud Detection (Kaggle)
+
+## 💡 Key Design Principles
+
+* One phase = one responsibility
+* No logic overlap between phases
+* Data contracts between layers
+* Final dataset = only external-facing output
