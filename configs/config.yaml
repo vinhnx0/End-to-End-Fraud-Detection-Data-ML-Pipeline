@@ -6,6 +6,7 @@ data:
   silver_root: data/silver
   gold_root: data/gold
   artifacts_root: data/artifacts
+  final_root: data/final
 
 scoring:
   model_output_dir: scoring/model
